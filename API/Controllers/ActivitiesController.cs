@@ -1,87 +1,44 @@
+using Application.Activities;
 using Domain;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Persistence;
 
 namespace API.Controllers;
 
 public class ActivitiesController : BaseApiController
 {
-    private readonly DataContext _context;
-
-    public ActivitiesController(DataContext context)
-    {
-        _context = context;
-    }
-
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Activity>>>GetActivities()
+    public async Task<ActionResult<IEnumerable<Activity>>> GetActivities()
     {
-        return await _context.Activities.ToListAsync();
+        return await Mediator.Send(new List.Query());
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Activity>>GetActivity(Guid id)
+    public async Task<ActionResult<Activity>> GetActivity(Guid id)
     {
-        return await _context.Activities.FindAsync(id);
-    }
-
-    [HttpPut("{Id}")]
-    public async Task<ActionResult<int>>UpdateActivity(Guid Id, Activity activityDTO)
-    {
-        if(Id != activityDTO.Id)
-        {
-            return BadRequest();
-        }
-
-        var activity = await _context.Activities.FindAsync(Id);
-
-        if(activity is null)
-        {
-            return NotFound();
-        }
-
-        activity.Title = activityDTO.Title;
-        activity.Date = activityDTO.Date;
-        activity.Description = activityDTO.Description;
-        activity.Category = activityDTO.Category;
-        activity.City = activityDTO.City;
-        activity.Venue = activityDTO.Venue;
-
-        try
-        {
-          await _context.SaveChangesAsync();          
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return NotFound();
-        }
-
-        return NoContent();
+        return await Mediator.Send(new Details.Query { Id = id });
     }
 
     [HttpPost]
-    public async Task<ActionResult<int>>AddActivity(Activity activity)
+    public async Task<IActionResult> CreateActivity(Activity activity)
     {
-        _context.Activities.Add(activity);
-        await _context.SaveChangesAsync();
+        await Mediator.Send(new Create.Command { Activity = activity });
 
         return Ok();
     }
 
-    [HttpDelete("{Id}")]
-    public async Task<IActionResult>RemoveActivity(int Id)
+    [HttpPut("{Id}")]
+    public async Task<IActionResult> EditActivity(Guid id, Activity activity)
     {
-        var activity = await _context.Activities.FindAsync(Id);
+        activity.Id = id;
 
-        if(activity is null)
-        {
-            return NotFound();
-        }
+        await Mediator.Send(new Edit.Command { Activity = activity });
+        return Ok();
+    }
 
-        _context.Activities.Remove(activity);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+    [HttpDelete("{Id}")]
+    public async Task<IActionResult> DeleteActivity(Guid id)
+    {
+        await Mediator.Send(new Delete.Command { Id = id });
+        return Ok();
     }
 }
