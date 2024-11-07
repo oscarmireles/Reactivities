@@ -5,6 +5,10 @@
 
 appsettings.json
 
+#SQLite temporary files
+*.db-shm
+*.db-wal
+
 # dotenv files
 .env
 
